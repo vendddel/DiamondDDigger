@@ -703,9 +703,9 @@
       if (!collides(drop.x, drop.y + 8, 12, 12)) drop.y += drop.vy * dt;
       else drop.vy = 0;
       if (Math.hypot(drop.x - player.x, drop.y - player.y) < 25) {
-        if (drop.type === "bread") {
+        if (drop.type === "bread" || drop.type === "medkit") {
           player.hp = Math.min(player.maxHp, player.hp + 28);
-          setHint("Bread picked up. Health restored.", 2);
+          setHint(drop.type === "medkit" ? "Medkit secured. Health restored." : "Bread picked up. Health restored.", 2);
         } else if (drop.type === "diamond") {
           player.diamonds++;
           setHint("Diamond collected.", 1.6);
@@ -730,7 +730,7 @@
   function airdrop() {
     if (player.y < 12 * TILE) return;
     const x = Math.max(TILE * 2, Math.min(WORLD_W - TILE * 3, player.x + (random() - 0.5) * 360));
-    drops.push({ type: random() < 0.55 ? "bread" : "crate", x, y: Math.max(0, camera.y - 40), vy: 0, parachute: true });
+    drops.push({ type: random() < 0.55 ? "medkit" : "crate", x, y: Math.max(0, camera.y - 40), vy: 0, parachute: true });
     setHint("Supply drop inbound. Look overhead!", 2.4);
   }
 
@@ -992,8 +992,9 @@
       ctx.strokeStyle = `rgba(255,55,45,${0.45 + Math.sin(gameTime * 17) * 0.2})`;
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(body.w + 5, y + 12);
-      ctx.lineTo(player.x + player.w / 2 - camera.x - x, player.y + player.h / 2 - camera.y);
+      const targetX = player.x + player.w / 2 - camera.x;
+      ctx.moveTo(flip ? -5 : body.w + 5, y + 12);
+      ctx.lineTo(flip ? x + body.w - targetX : targetX - x, player.y + player.h / 2 - camera.y);
       ctx.stroke();
     }
     const by = y;
@@ -1097,7 +1098,7 @@
         ctx.beginPath(); ctx.arc(x + 6, y - 9, 13, Math.PI, Math.PI * 2); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(x - 7, y - 9); ctx.lineTo(x, y + 1); ctx.moveTo(x + 19, y - 9); ctx.lineTo(x + 12, y + 1); ctx.stroke();
       }
-      const colors = { bread: "#d78d48", ammo: "#d2b557", diamond: "#6ce0d4", crate: "#b98549" };
+      const colors = { bread: "#d78d48", medkit: "#b84e45", ammo: "#d2b557", diamond: "#6ce0d4", crate: "#b98549" };
       ctx.fillStyle = colors[drop.type] || "#ddd";
       ctx.fillRect(x, y, 13, 13);
       ctx.fillStyle = "#fff4cf";
@@ -1105,6 +1106,10 @@
       if (drop.type === "bread") {
         ctx.fillStyle = "#704028";
         ctx.fillRect(x + 3, y + 8, 8, 3);
+      } else if (drop.type === "medkit") {
+        ctx.fillStyle = "#fff4cf";
+        ctx.fillRect(x + 5, y + 2, 3, 9);
+        ctx.fillRect(x + 2, y + 5, 9, 3);
       }
     }
   }
