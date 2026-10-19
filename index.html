@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#12100f">
+    <title>Diamond Mine — Escape</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <main class="game-shell">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="Diamond Mine Escape home">
+          <span class="brand-mark">◆</span>
+          <span>DIAMOND<span class="brand-muted"> MINE</span></span>
+        </a>
+        <div class="mission"><span class="live-dot"></span> ESCAPE THE MINE <span class="mission-divider">/</span> DEFEAT THE MINE LORD</div>
+        <button class="icon-button" id="helpButton" aria-label="Show controls" title="Controls">?</button>
+      </header>
+
+      <section class="game-frame" aria-label="Diamond Mine game">
+        <canvas id="game" width="960" height="540" aria-label="Game world"></canvas>
+        <div class="start-screen" id="startScreen">
+          <div class="title-kicker">A PIXEL ART SURVIVAL ADVENTURE</div>
+          <h1>Diamond Mine<span> — Escape</span></h1>
+          <p>Dig your way out. Fight your way up. Make the Mine Lord pay.</p>
+          <button class="primary-button" id="startButton">START YOUR ESCAPE <span>→</span></button>
+          <div class="start-note">WASD to move <i>·</i> Mouse to dig &amp; fire <i>·</i> E to loot</div>
+        </div>
+        <div class="modal-screen hidden" id="endScreen">
+          <div class="title-kicker" id="endKicker">ESCAPE COMPLETE</div>
+          <h2 id="endTitle">The surface is yours.</h2>
+          <p id="endMessage"></p>
+          <button class="primary-button" id="restartButton">PLAY AGAIN <span>↻</span></button>
+        </div>
+      </section>
+
+      <section class="status-bar" aria-label="Player status">
+        <div class="status-group health-group">
+          <span class="status-label">HEALTH</span>
+          <div class="health-track"><div id="healthFill" class="health-fill"></div></div>
+          <span id="healthText" class="status-value">100</span>
+        </div>
+        <div class="status-group">
+          <span class="status-label">DEPTH</span>
+          <span id="depthText" class="status-value accent-value">—</span>
+        </div>
+        <div class="status-group">
+          <span class="status-label">DIAMONDS</span>
+          <span class="status-value diamond-value"><span>◆</span><b id="diamondText">0</b></span>
+        </div>
+        <div class="status-group">
+          <span class="status-label">STONE</span>
+          <span id="stoneText" class="status-value">0</span>
+        </div>
+        <div class="weapon-readout">
+          <span class="status-label">EQUIPPED</span>
+          <span id="weaponText">PICKAXE</span>
+          <span id="ammoText">∞</span>
+        </div>
+      </section>
+
+      <section class="lower-bar">
+        <div class="hotbar" id="hotbar" aria-label="Weapon slots"></div>
+        <div class="quick-help">
+          <span><kbd>A</kbd><kbd>D</kbd> MOVE</span>
+          <span><kbd>W</kbd><kbd>SPACE</kbd> JUMP / CLIMB</span>
+          <span><kbd>F</kbd> PICKAXE</span>
+          <span><kbd>E</kbd> LOOT</span>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <span>FOUR LEVELS BELOW. ONE WAY OUT.</span>
+        <span id="hintText">Find a ladder shaft and keep climbing.</span>
+      </footer>
+    </main>
+
+    <div class="help-backdrop hidden" id="helpBackdrop">
+      <section class="help-card" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+        <button class="close-button" id="closeHelp" aria-label="Close controls">×</button>
+        <div class="title-kicker">FIELD GUIDE</div>
+        <h2 id="helpTitle">How to escape</h2>
+        <div class="control-grid">
+          <span><kbd>A</kbd> / <kbd>D</kbd></span><span>Move left and right</span>
+          <span><kbd>W</kbd> / <kbd>SPACE</kbd></span><span>Jump, or climb up a ladder</span>
+          <span><kbd>S</kbd></span><span>Climb down a ladder</span>
+          <span><kbd>CLICK</kbd></span><span>Dig with the pickaxe or fire</span>
+          <span><kbd>RIGHT CLICK</kbd></span><span>Place a collected stone block</span>
+          <span><kbd>E</kbd></span><span>Open a nearby chest</span>
+          <span><kbd>1–6</kbd> / <kbd>SCROLL</kbd></span><span>Switch weapons</span>
+          <span><kbd>F</kbd> / <kbd>Q</kbd></span><span>Swing your pickaxe</span>
+        </div>
+        <p>Explore each level, loot chests, and watch for the Mine Lord's laser. Bread restores health. Dynamite clears terrain and enemies.</p>
+      </section>
+    </div>
+    <script src="game.js"></script>
+  </body>
+</html>

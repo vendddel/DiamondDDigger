@@ -1,0 +1,235 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+  color-scheme: dark;
+  --bg: #12100f;
+  --panel: #1b1916;
+  --panel-light: #24211d;
+  --line: #34302a;
+  --text: #f2ede4;
+  --muted: #91887a;
+  --gold: #e8b84b;
+  --orange: #e78447;
+  font-family: "DM Sans", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: var(--text);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(104, 72, 35, .12), transparent 55%),
+    var(--bg);
+}
+
+button { font: inherit; }
+
+.game-shell { width: min(100%, 1120px); }
+
+.topbar {
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  text-decoration: none;
+  font: 800 17px "Barlow Condensed", sans-serif;
+  letter-spacing: 1.5px;
+}
+
+.brand-mark { color: var(--gold); font-size: 22px; }
+.brand-muted { color: #aaa093; font-weight: 600; }
+.mission, .status-label, .footer, .quick-help, .weapon-readout, .title-kicker {
+  font-family: "DM Mono", monospace;
+  letter-spacing: 1px;
+}
+
+.mission { color: #aaa093; font-size: 10px; }
+.live-dot { display: inline-block; width: 6px; height: 6px; margin: 0 8px 1px 0; border-radius: 50%; background: #dc8e4a; box-shadow: 0 0 10px #e78447; }
+.mission-divider { padding: 0 9px; color: #5c554b; }
+
+.icon-button, .close-button {
+  width: 30px;
+  height: 30px;
+  border: 1px solid #494138;
+  border-radius: 50%;
+  color: #d8cebd;
+  background: transparent;
+  cursor: pointer;
+}
+
+.icon-button:hover, .close-button:hover { color: var(--gold); border-color: var(--gold); }
+
+.game-frame {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #51483b;
+  border-radius: 5px;
+  background: #171b1e;
+  box-shadow: 0 18px 65px #0008, 0 0 0 5px #1b1916;
+}
+
+canvas { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; image-rendering: pixelated; }
+
+.start-screen, .modal-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  background: linear-gradient(90deg, rgba(12, 12, 13, .9), rgba(12, 12, 13, .62) 58%, rgba(12, 12, 13, .75));
+}
+
+.start-screen::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  content: "";
+  opacity: .23;
+  background: repeating-linear-gradient(0deg, transparent 0 31px, #b8915830 32px), repeating-linear-gradient(90deg, transparent 0 31px, #b8915830 32px);
+  mask-image: linear-gradient(90deg, transparent, #000 48%, #000);
+}
+
+.start-screen > *, .modal-screen > * { position: relative; z-index: 1; }
+.title-kicker { color: var(--gold); font-size: 10px; font-weight: 500; letter-spacing: 2px; }
+
+h1, h2 { margin: 13px 0 8px; font: 800 clamp(34px, 5.4vw, 58px)/.95 "Barlow Condensed", sans-serif; letter-spacing: .4px; }
+h1 span { display: block; color: var(--gold); }
+.start-screen p, .modal-screen p { margin: 12px 0 23px; color: #c0b7a9; font-size: 14px; }
+
+.primary-button {
+  padding: 13px 19px;
+  border: 1px solid #f1c967;
+  border-radius: 3px;
+  color: #21180b;
+  background: linear-gradient(180deg, #f1cb6c, #dca53f);
+  font: 700 12px "DM Mono", monospace;
+  letter-spacing: 1px;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #906329;
+  transition: transform .15s, filter .15s;
+}
+
+.primary-button:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.primary-button span { padding-left: 12px; font-size: 16px; }
+.start-note { margin-top: 28px; color: #a59b8d; font: 10px "DM Mono", monospace; }
+.start-note i { padding: 0 7px; color: var(--gold); font-style: normal; }
+.hidden { display: none !important; }
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  min-height: 64px;
+  margin-top: 13px;
+  padding: 10px 19px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: linear-gradient(100deg, #1e1b17, #191714);
+}
+
+.status-group { min-width: 110px; display: flex; flex-direction: column; gap: 5px; padding: 0 19px; border-left: 1px solid #34302a; }
+.status-group:first-child { padding-left: 0; border-left: 0; }
+.health-group { min-width: 235px; }
+.status-label { color: #8e8578; font-size: 9px; }
+.status-value { color: #eee7dc; font: 500 14px "DM Mono", monospace; }
+.accent-value { color: #dfc08a; }
+.diamond-value { display: flex; gap: 7px; color: var(--gold); }
+.diamond-value span { font-size: 13px; }
+.health-track { width: 150px; height: 6px; overflow: hidden; border-radius: 10px; background: #39332e; }
+.health-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #b94232, #e97d48); transition: width .18s; }
+.health-group .status-label { display: flex; justify-content: space-between; width: 175px; }
+
+.weapon-readout {
+  min-width: 145px;
+  margin-left: auto;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 5px 12px;
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.weapon-readout .status-label { grid-column: 1 / -1; }
+#ammoText { color: #bcb2a1; font-size: 11px; }
+
+.lower-bar { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 14px 2px 9px; }
+.hotbar { display: flex; gap: 6px; }
+.weapon-slot {
+  position: relative;
+  width: 48px;
+  height: 47px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #38332d;
+  border-radius: 3px;
+  color: #bcb3a5;
+  background: #1a1815;
+  cursor: pointer;
+  transition: border-color .12s, background .12s;
+}
+.weapon-slot:hover { border-color: #8a7045; }
+.weapon-slot.selected { border-color: var(--gold); color: var(--gold); background: #33291b; box-shadow: 0 0 0 1px #e8b84b26; }
+.weapon-slot.locked { opacity: .4; }
+.slot-key { position: absolute; left: 4px; top: 3px; color: #8b8275; font: 9px "DM Mono", monospace; }
+.slot-icon { font-size: 19px; line-height: 1; }
+.slot-ammo { position: absolute; right: 4px; bottom: 3px; color: #a59b8d; font: 9px "DM Mono", monospace; }
+.quick-help { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 11px 17px; color: #948b7e; font-size: 9px; }
+.quick-help span { white-space: nowrap; }
+kbd { padding: 2px 4px; border: 1px solid #464037; border-radius: 2px; color: #d9cebd; background: #25221d; font: 9px "DM Mono", monospace; }
+.footer { display: flex; justify-content: space-between; padding: 13px 3px 0; color: #70695f; font-size: 8px; }
+.footer #hintText { color: #a19177; text-align: right; }
+
+.help-backdrop { position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; padding: 20px; background: #050505c9; }
+.help-card { position: relative; width: min(100%, 470px); padding: 31px; border: 1px solid #5a4d3a; border-radius: 5px; background: #1b1916; box-shadow: 0 20px 70px #000b; }
+.help-card h2 { margin: 9px 0 23px; font-size: 35px; }
+.close-button { position: absolute; top: 17px; right: 17px; font-size: 21px; }
+.control-grid { display: grid; grid-template-columns: 135px 1fr; gap: 13px 10px; align-items: center; color: #c8bfb1; font-size: 12px; }
+.control-grid > span:nth-child(odd) { display: flex; gap: 4px; }
+.help-card p { margin: 24px 0 0; color: #92897b; font-size: 12px; line-height: 1.7; }
+
+@media (max-width: 760px) {
+  body { padding: 12px; }
+  .topbar { height: 48px; }
+  .mission { font-size: 8px; }
+  .status-bar { flex-wrap: wrap; gap: 13px 0; padding: 12px; }
+  .status-group { min-width: auto; padding: 0 12px; }
+  .health-group { min-width: 190px; }
+  .health-track { width: 125px; }
+  .weapon-readout { min-width: 110px; }
+  .quick-help { display: none; }
+  .lower-bar { min-height: 66px; }
+}
+
+@media (max-width: 480px) {
+  body { padding: 8px; }
+  .brand { font-size: 14px; }
+  .mission { max-width: 175px; text-align: center; }
+  .status-group { padding: 0 9px; }
+  .health-group { min-width: 170px; }
+  .health-group .status-label { width: 145px; }
+  .health-track { width: 102px; }
+  .status-label { font-size: 8px; }
+  .status-value { font-size: 11px; }
+  .weapon-readout { font-size: 10px; }
+  .weapon-slot { width: 42px; height: 43px; }
+  .footer { font-size: 7px; }
+  .start-screen p { max-width: 275px; font-size: 12px; }
+  .start-note { font-size: 8px; }
+}
