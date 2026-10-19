@@ -112,7 +112,8 @@
       }
       for (let x = 6 + level * 3; x < MAP_W - 5; x += 15) {
         const pocketY = floor - 8;
-        if (pocketY > floors[Math.min(level + 1, floors.length - 1)] + 2) continue;
+        const ceiling = level < floors.length - 1 ? floors[level + 1] + 4 : 13;
+        if (pocketY < ceiling || pocketY > floor - 5) continue;
         for (let px = x; px < Math.min(x + 5, MAP_W - 2); px++) {
           for (let py = pocketY; py < pocketY + 2; py++) setTile(px, py, 0);
         }
@@ -332,7 +333,6 @@
     tileDamage.delete(key);
     if (tile === 3) {
       player.diamonds++;
-      drops.push({ type: "diamond", x: (tx + 0.5) * TILE, y: (ty + 0.5) * TILE, vy: -45, parachute: false });
       setHint("Diamond mined! Keep it safe on the way out.", 2.2);
     } else if (tile === 2 || tile === 4) {
       player.stone++;
@@ -410,7 +410,8 @@
     const tx = Math.floor(world.x / TILE);
     const ty = Math.floor(world.y / TILE);
     if (tx < 1 || tx > MAP_W - 2 || ty < 1 || ty >= MAP_H - 1 || tileDistance(tx, ty) > TILE * 4.5) return;
-    if (tiles[ty][tx] !== 0 || collides(player.x, player.y, player.w, player.h) && tx * TILE < player.x + player.w && (tx + 1) * TILE > player.x && ty * TILE < player.y + player.h && (ty + 1) * TILE > player.y) return;
+    const overlapsPlayer = tx * TILE < player.x + player.w && (tx + 1) * TILE > player.x && ty * TILE < player.y + player.h && (ty + 1) * TILE > player.y;
+    if (tiles[ty][tx] !== 0 || overlapsPlayer) return;
     setTile(tx, ty, 2);
     player.stone--;
     updateHud();
@@ -753,7 +754,8 @@
 
   function updatePlayer(dt) {
     const ladderX = nearLadder(player);
-    const climbing = ladderX >= 0 && (keys.has("w") || keys.has("s") || keys.has("arrowup") || keys.has("arrowdown"));
+    const onLadder = ladderX >= 0;
+    const climbing = onLadder && (keys.has("w") || keys.has("s") || keys.has("arrowup") || keys.has("arrowdown"));
     const left = keys.has("a") || keys.has("arrowleft");
     const right = keys.has("d") || keys.has("arrowright");
     const jumpPressed = pressed.has(" ") || pressed.has("w") || pressed.has("arrowup");
@@ -766,6 +768,9 @@
     if (climbing) {
       player.x += ((ladderX + 0.5) * TILE - (player.x + player.w / 2)) * Math.min(1, dt * 10);
       player.vy = (keys.has("s") || keys.has("arrowdown") ? 1 : -1) * 145;
+    } else if (onLadder) {
+      player.x += ((ladderX + 0.5) * TILE - (player.x + player.w / 2)) * Math.min(1, dt * 10);
+      player.vy = 0;
     } else {
       if (jumpPressed && player.onGround) player.vy = -365;
       player.vy = Math.min(620, player.vy + 920 * dt);
@@ -987,11 +992,11 @@
       ctx.strokeStyle = `rgba(255,55,45,${0.45 + Math.sin(gameTime * 17) * 0.2})`;
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(body.w + 5, y + 12 - camera.y);
-      ctx.lineTo(VIEW_W * 0.55 - x, player.y + player.h / 2 - body.y - 10);
+      ctx.moveTo(body.w + 5, y + 12);
+      ctx.lineTo(player.x + player.w / 2 - camera.x - x, player.y + player.h / 2 - camera.y);
       ctx.stroke();
     }
-    const by = y - camera.y;
+    const by = y;
     ctx.fillStyle = "#342a25";
     ctx.fillRect(3, by + body.h - 7, 8, 7);
     ctx.fillRect(body.w - 10, by + body.h - 7, 8, 7);
@@ -1232,6 +1237,7 @@
     if (event.button === 2) {
       mouse.rightDown = true;
       placeBlock();
+      attackCooldown = 0.22;
     }
   });
   window.addEventListener("mouseup", event => {
