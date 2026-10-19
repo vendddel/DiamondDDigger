@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Diamond Mine – Escape</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game" width="960" height="600"></canvas>
+  <div id="hud">
+    <div>❤ <span id="hp">100</span></div>
+    <div>💎 <span id="dia">0</span></div>
+    <div>🪨 <span id="stone">0</span></div>
+    <div>Depth: <span id="depth">0</span> m</div>
+  </div>
+  <div id="weapons"></div>
+  <div id="msg">
+    <h1>Diamond Mine – Escape</h1>
+    <p>You are a slave deep in the mine. Dig your way out, defeat the armed soldiers and reach the surface!</p>
+    <p><b>A/D</b> move · <b>W/Space</b> jump / climb ladder · <b>S</b> climb down<br>
+    <b>Left mouse</b> dig (hold) · <b>Right mouse</b> place block<br>
+    <b>E</b> open chest (weapons!) · <b>1–6</b> / scroll switch weapon · left mouse fires the equipped weapon<br>
+    <b>F</b> or <b>Q</b> pickaxe swing · soldiers may drop bread and ammo<br>
+    Soldiers: rifleman, shotgunner, gunner, sniper (red laser!), heavy<br>
+    The <b>Mine Lord</b> waits on the surface – parachuting medkits and ammo crates will help</p>
+    <button id="start">Start</button>
+  </div>
+</div>
+<script src="game.js"></script>
+</body>
+</html>

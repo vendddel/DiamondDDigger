@@ -1,0 +1,35 @@
+{
+  "name": "diamond-mine-escape",
+  "version": "1.0.0",
+  "description": "2D Terraria-style action platformer: escape the diamond mine.",
+  "main": "main.js",
+  "author": "Vendel",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable"
+  },
+  "build": {
+    "appId": "com.vendel.diamondmine",
+    "productName": "Diamond Mine Escape",
+    "files": [
+      "main.js",
+      "index.html",
+      "style.css",
+      "game.js"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "portable"
+    },
+    "portable": {
+      "artifactName": "DiamondMineEscape.exe"
+    }
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  }
+}
