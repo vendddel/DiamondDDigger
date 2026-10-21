@@ -13,12 +13,14 @@ const LEVELS = [24, 38, 52, 66];
 const ORDER = ["pick", "pistol", "shotgun", "smg", "rifle", "dynamite"];
 const WEAP = {
   pick: { name: "Pickaxe" },
-  pistol: { name: "Pistol", dmg: 18, cd: 0.28, spd: 760, n: 1, spr: 0.03, ammo0: 24 },
-  shotgun: { name: "Shotgun", dmg: 9, cd: 0.8, spd: 650, n: 6, spr: 0.24, life: 0.4, ammo0: 10 },
-  smg: { name: "SMG", dmg: 7, cd: 0.085, spd: 720, n: 1, spr: 0.1, ammo0: 60 },
-  rifle: { name: "Rifle", dmg: 42, cd: 0.65, spd: 1250, n: 1, spr: 0, ammo0: 10 },
-  dynamite: { name: "Dynamite", cd: 0.6, ammo0: 3 }
+  pistol: { name: "Pistol", dmg: 18, cd: 0.28, spd: 760, n: 1, spr: 0.03, pack: 12, price: 2 },
+  shotgun: { name: "Shotgun", dmg: 9, cd: 0.8, spd: 650, n: 6, spr: 0.24, life: 0.4, pack: 8, price: 5 },
+  smg: { name: "SMG", dmg: 7, cd: 0.085, spd: 720, n: 1, spr: 0.1, pack: 30, price: 8 },
+  rifle: { name: "Rifle", dmg: 42, cd: 0.65, spd: 1250, n: 1, spr: 0, pack: 8, price: 12 },
+  dynamite: { name: "Dynamite", cd: 0.6, pack: 3, price: 12 }
 };
+const GUNS = ["pistol", "shotgun", "smg", "rifle", "dynamite"];
+const START_AMMO = 12, SUPPLY_PRICE = 2, MED_HEAL = 35, DASH_CD = 5, DASH_TIME = 0.16, DASH_SPEED = 620;
 const TYPES = {
   rifle: { name: "Rifleman", hp: 50, spd: 70, range: 480, pref: 200, rest: [1, 1.8], burst: 1, bcd: 0, w: 18, h: 40, col: "#3d5a2e", pants: "#2c3b22", hat: "#2a3d20", gun: "rifle" },
   shotgun: { name: "Shotgunner", hp: 85, spd: 90, range: 280, pref: 90, rest: [1.4, 2], burst: 1, bcd: 0, w: 20, h: 40, col: "#7a3a28", pants: "#3b2a22", hat: "#4a2418", gun: "shotgun" },
@@ -85,7 +87,7 @@ function generate() {
       let t = AIR;
       if (y === SURF) t = GRASS;
       else if (y > SURF) t = y < SURF + 12 ? DIRT : STONE;
-      if (y > SURF + 3 && t !== AIR && Math.random() < 0.025 + y / 3000) t = DIAM;
+      if (y > SURF + 3 && t !== AIR && Math.random() < 0.07 + y / 1200) t = DIAM;
       if (x === 0 || x === W - 1 || y === H - 1) t = BED;
       row.push(t); dr.push(0);
     }
@@ -115,7 +117,7 @@ function generate() {
   for (let i = 0; i < 3; i++) shaft(i % 2 === 0 ? 14 : W - 16, LEVELS[i], LEVELS[i + 1] + 2);
   for (let x = W - 9; x <= W - 7; x++) map[SURF][x] = AIR;
 
-  chests.push({ tx: 12, ty: LEVELS[3] + 2, open: false, force: "pistol" });
+  chests.push({ tx: 12, ty: LEVELS[3] + 2, open: false });
   for (const r of LEVELS) for (let k = 0; k < 2; k++) {
     const tx = (rnd(6, W - 6) | 0); if (tile(tx, r + 2) === AIR) chests.push({ tx, ty: r + 2, open: false });
   }
@@ -151,11 +153,11 @@ function spawnSoldiers() {
 
 function reset() {
   generate(); spawnSoldiers();
-  player = { x: 6 * T, y: (LEVELS[3] + 2) * T - 38, w: 16, h: 38, vx: 0, vy: 0, hp: 100, dia: 0, stone: 0, dir: 1, ground: false, swing: 0, hurt: 0, onLadder: false, ph: 0, own: { pick: true }, ammo: {}, sel: "pick", fireCd: 0, muzzle: 0, aim: 0 };
-  boss = makeBoss(); bombs = [];
+  player = { x: 6 * T, y: (LEVELS[3] + 2) * T - 38, w: 16, h: 38, vx: 0, vy: 0, hp: 100, dia: 0, stone: 0, dir: 1, ground: false, swing: 0, hurt: 0, onLadder: false, ph: 0,   own: { pick: true }, ammo: { pistol: 0, shotgun: 0, smg: 0, rifle: 0, dynamite: 0 }, meds: 0, dashCd: 0, dashT: 0, dashDir: 1, sel: "pick", fireCd: 0, muzzle: 0, aim: 0 };
+    boss = makeBoss(); bombs = []; runTime = 0; lastHud = ""; closeShop();
   bullets = []; items = []; dyn = []; parts = []; keys = {}; mining = { x: -1, y: -1, p: 0 }; time = 0; shake = 0;
   state = "play";
-  toast("Find chests for weapons (E)!");
+  toast("Mine diamonds, then press E to open the shop!");
 }
 function toast(t) { toastTxt = t; toastT = 2.5; }
 
@@ -181,7 +183,12 @@ function burst(x, y, c, n) { for (let i = 0; i < n; i++) parts.push({ x, y, vx: 
 
 /* ---------- játékos ---------- */
 function selectWeapon(name) { if (player.own[name]) player.sel = name; }
-function giveWeapon(name, ammo) { player.own[name] = true; player.ammo[name] = (player.ammo[name] || 0) + ammo; }
+const randomGun = () => GUNS[(Math.random() * GUNS.length) | 0];
+function giveAmmo(gun, mult) {
+  const amt = Math.ceil(WEAP[gun].pack * (mult || 1));
+  player.ammo[gun] += amt;
+  return amt;
+}
 
 function openNearChest() {
   const p = player;
@@ -189,18 +196,93 @@ function openNearChest() {
     if (c.open) continue;
     if (Math.hypot(c.tx * T + T / 2 - (p.x + p.w / 2), c.ty * T + T / 2 - (p.y + p.h / 2)) < 48) {
       c.open = true;
-      const r = Math.random();
-      const name = c.force || (r < .3 ? "pistol" : r < .52 ? "shotgun" : r < .74 ? "smg" : r < .9 ? "rifle" : "dynamite");
-      const W0 = WEAP[name], amt = p.own[name] ? Math.ceil(W0.ammo0 * .6) : W0.ammo0;
-      giveWeapon(name, amt);
-      if (!p.sel || p.sel === "pick") p.sel = name;
-      p.hp = Math.min(100, p.hp + 10);
-      toast("Found: " + W0.name + " (+" + amt + ")");
+      if (Math.random() < .25) { p.meds++; toast("Found: Medkit (press H to use)"); }
+      else { GUNS.forEach(g => giveAmmo(g, 2.5)); toast("Found: lots of ammo for ALL guns!"); }
       burst(c.tx * T + T / 2, c.ty * T + 8, "#ffd34d", 14);
-      return;
+      return true;
     }
   }
+  return false;
 }
+
+function useMedkit() {
+  const p = player;
+  if (state !== "play") return;
+  if (p.meds <= 0) { toast("No medkits!"); return; }
+  if (p.hp >= 100) { toast("Health is already full"); return; }
+  p.meds--; p.hp = Math.min(100, p.hp + MED_HEAL);
+  toast("+" + MED_HEAL + " HP");
+  burst(p.x + p.w / 2, p.y + 10, "#ff5a6a", 12);
+}
+
+function dash() {
+  const p = player;
+  if (state !== "play" || p.dashCd > 0) return;
+  p.dashCd = DASH_CD; p.dashT = DASH_TIME; p.dashDir = p.dir;
+  shake = Math.max(shake, 2);
+}
+
+/* ---------- shop ---------- */
+const shopEl = document.getElementById("shop");
+let shopNote = "", ICON = {};
+const DIA_SVG = '<svg class="ic" viewBox="0 0 24 24"><path d="M12 2l8 7-8 13L4 9z" fill="#35c6f2" stroke="#0f7fa0" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 2L4 9h16z" fill="#a5f1ff"/></svg>';
+function buildIcons() {
+  for (const n of ORDER) {
+    const c = document.createElement("canvas"); c.width = 56; c.height = 34;
+    const g = c.getContext("2d"); g.translate(9, 17); g.scale(1.3, 1.3);
+    drawWeapon(n, g); ICON[n] = c.toDataURL();
+  }
+}
+function openShop() {
+  if (state !== "play") return;
+  state = "shop"; shopNote = ""; mouse.left = mouse.right = false;
+  renderShop(); shopEl.classList.remove("hidden");
+}
+function closeShop() {
+  if (state === "shop") state = "play";
+  shopEl.classList.add("hidden");
+}
+function renderShop() {
+  const p = player, d = p.dia;
+  const btn = (act, id, label, cost, ok) => '<button data-act="' + act + '" data-id="' + id + '"' + (ok && d >= cost ? "" : " disabled") + ">" + label + (cost ? " · " + cost + " " + DIA_SVG : "") + "</button>";
+  let h = '<div class="head"><h2>Shop</h2><div class="bal">' + DIA_SVG + " <b>" + d + "</b></div></div>";
+  h += '<div class="cols"><div><h3>Weapons</h3>';
+  for (const n of GUNS) {
+    const own = p.own[n];
+    h += '<div class="row"><img src="' + ICON[n] + '"><span class="nm">' + WEAP[n].name + "</span>" + (own ? '<span class="owned">Owned</span>' : btn("buy", n, "Buy (+" + START_AMMO + " ammo)", WEAP[n].price, true)) + "</div>";
+  }
+  h += '</div><div><h3>Ammo</h3>';
+  for (const n of GUNS) {
+    h += '<div class="row"><img src="' + ICON[n] + '"><span class="nm">' + WEAP[n].name + ' <i>' + p.ammo[n] + "</i></span>" + btn("ammo", n, "+" + WEAP[n].pack, SUPPLY_PRICE, p.own[n]) + "</div>";
+  }
+  h += '</div></div><h3>Supplies</h3><div class="row"><span class="medic">+</span><span class="nm">Medkit (+' + MED_HEAL + " HP) <i>" + p.meds + "</i></span>" + btn("med", "", "Buy", SUPPLY_PRICE, true) + "</div>";
+  h += '<div class="note">' + (shopNote || "Ammo can only be bought for weapons you own. Use medkits with H.") + '</div><div class="foot"><button data-act="close">Close (E)</button></div>';
+  shopEl.innerHTML = '<div class="panel">' + h + "</div>";
+}
+function buy(act, id) {
+  const p = player;
+  if (act === "close") { closeShop(); return; }
+  const price = act === "buy" ? WEAP[id].price : SUPPLY_PRICE;
+  if (p.dia < price) { shopNote = "Not enough diamonds!"; renderShop(); return; }
+  if (act === "buy") {
+    if (p.own[id]) return;
+    p.dia -= price; p.own[id] = true; p.ammo[id] += START_AMMO;
+    if (p.sel === "pick") p.sel = id;
+    shopNote = "Bought " + WEAP[id].name + " (+" + START_AMMO + " ammo)";
+  } else if (act === "ammo") {
+    if (!p.own[id]) return;
+    p.dia -= price; p.ammo[id] += WEAP[id].pack;
+    shopNote = "+" + WEAP[id].pack + " " + WEAP[id].name + " ammo";
+  } else if (act === "med") {
+    p.dia -= price; p.meds++;
+    shopNote = "Bought a medkit";
+  }
+  renderShop();
+}
+shopEl.addEventListener("click", e => {
+  const b = e.target.closest("button[data-act]");
+  if (b && !b.disabled) buy(b.dataset.act, b.dataset.id);
+});
 
 function shoot() {
   const p = player, w = WEAP[p.sel];
@@ -221,12 +303,17 @@ function updatePlayer(dt) {
   const p = player;
   const cx = Math.floor((p.x + p.w / 2) / T), cy = Math.floor((p.y + p.h / 2) / T);
   p.onLadder = tile(cx, cy) === LADDER;
+  p.dashCd = Math.max(0, p.dashCd - dt);
   const dirIn = (keys.d ? 1 : 0) - (keys.a ? 1 : 0);
   p.vx = dirIn * 170;
   if (p.onLadder && (keys.w || keys.s)) p.vy = ((keys.s ? 1 : 0) - (keys.w ? 1 : 0)) * 140;
   else if (p.onLadder) p.vy = 0;
   else p.vy = Math.min(p.vy + 1500 * dt, 800);
   if ((keys.w || keys[" "]) && p.ground && !p.onLadder) p.vy = -480;
+  if (p.dashT > 0) {
+    p.dashT -= dt; p.vx = p.dashDir * DASH_SPEED; p.vy = 0;
+    parts.push({ x: p.x + p.w / 2 - p.dashDir * 8, y: p.y + rnd(4, p.h - 4), vx: -p.dashDir * 40, vy: rnd(-20, 20), life: .3, c: Math.random() < .5 ? "#9fe8ff" : "#ffffff" });
+  }
   moveEntity(p, dt);
   p.ph += Math.abs(p.vx) * dt * .06;
   p.swing = Math.max(0, p.swing - dt); p.hurt = Math.max(0, p.hurt - dt);
@@ -264,10 +351,9 @@ function hurtSoldier(s, dmg, kx) {
   s.hp -= dmg; s.flash = .12; s.kb = .15; s.vx = kx; s.vy = Math.min(s.vy, -120);
   burst(s.x + s.w / 2, s.y + 15, "#b11", 6);
   if (s.hp <= 0) {
-    const hasGun = Object.keys(player.own).some(k => k !== "pick" && k !== "dynamite");
     const r = Math.random();
     if (r < .35) items.push({ x: s.x, y: s.y + s.h - 12, vy: 0, kind: "bread" });
-    else if (r < .7 && hasGun) items.push({ x: s.x, y: s.y + s.h - 12, vy: 0, kind: "ammo" });
+    else if (r < .7) items.push({ x: s.x, y: s.y + s.h - 12, vy: 0, kind: "ammo", gun: randomGun() });
     burst(s.x + s.w / 2, s.y + 20, "#b11", 14);
   }
 }
@@ -305,7 +391,7 @@ function updateSoldiers(dt) {
     s.flash = Math.max(0, s.flash - dt); s.cd -= dt; s.mz = Math.max(0, s.mz - dt);
     const px = p.x + p.w / 2, py = p.y + p.h / 2;
     const dx = px - (s.x + s.w / 2), d = Math.hypot(dx, py - (s.y + 20));
-    const sees = d < D.range && hasLOS(s.x + s.w / 2, s.y + 14, px, py);
+    const sees = d < D.range && Math.abs(dx) <= 12 * T && Math.abs(py - (s.y + 20)) <= 6 * T && hasLOS(s.x + s.w / 2, s.y + 14, px, py);
     if (s.kb > 0) s.kb -= dt;
     else if (sees) {
       s.dir = dx > 0 ? 1 : -1;
@@ -411,7 +497,7 @@ function updateBoss(dt) {
   b.crateT -= dt;
   if (b.crateT <= 0) {
     b.crateT = 4.5;
-    if (items.filter(i => i.drop).length < 4) items.push({ x: rnd(W - 46, W - 5) * T, y: (SURF - 14) * T, vy: 0, kind: (p.hp < 60 || Math.random() < .5) ? "med" : "ammo", big: true, drop: true });
+    if (items.filter(i => i.drop).length < 4) items.push({ x: rnd(W - 46, W - 5) * T, y: (SURF - 14) * T, vy: 0, kind: (p.hp < 60 || Math.random() < .5) ? "med" : "ammo", gun: randomGun(), big: true, drop: true });
   }
 }
 function explodeBomb(x, y) {
@@ -501,9 +587,8 @@ function updateBullets(dt) {
     if (!SOLID(tile(Math.floor((it.x + 6) / T), Math.floor((it.y + 12 + it.vy * dt) / T)))) it.y += it.vy * dt; else it.vy = 0;
     if (Math.abs(it.x - p.x) < 22 && Math.abs(it.y - p.y - 15) < 30) {
       if (it.kind === "bread") p.hp = Math.min(100, p.hp + 25);
-      else if (it.kind === "med") { p.hp = Math.min(100, p.hp + 40); toast("Medkit +40 ❤"); }
-      else for (const k of Object.keys(p.own)) if (k !== "pick") p.ammo[k] += it.big ? WEAP[k].ammo0 : Math.ceil(WEAP[k].ammo0 / 2);
-      if (it.kind === "ammo") toast("Ammo picked up");
+      else if (it.kind === "med") { p.meds++; toast("Medkit picked up (press H)"); }
+      else { const g = it.gun || randomGun(); toast("+" + giveAmmo(g, it.big ? 2 : 1) + " " + WEAP[g].name + " ammo"); }
       it.got = true;
     }
   }
@@ -517,7 +602,11 @@ function updateBullets(dt) {
 function win() {
   if (state !== "play") return;
   state = "won";
-  showMsg("You are free! 🎉", "You defeated the Mine Lord and escaped the mine. Diamonds collected: " + player.dia, "New game");
+  showMsg("You are free! 🎉", "You defeated the Mine Lord and escaped the mine.<br>Time: <b>" + fmtTime(runTime) + "</b> · Diamonds left: " + player.dia, "New game");
+}
+function fmtTime(t) {
+  const m = Math.floor(t / 60), s = t - m * 60;
+  return String(m).padStart(2, "0") + ":" + (s < 10 ? "0" : "") + s.toFixed(1);
 }
 function showMsg(h, p, b) {
   const m = document.getElementById("msg");
@@ -528,7 +617,9 @@ function showMsg(h, p, b) {
 function begin() { document.getElementById("msg").classList.add("hidden"); reset(); }
 
 /* ---------- rajzolás ---------- */
-function drawWeapon(n) {
+const MAINCTX = ctx;
+function drawWeapon(n, target) {
+  const ctx = target || MAINCTX;
   const r = (c, x, y, w, h) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
   switch (n) {
     case "pick": r("#8a5a2b", 0, -1, 20, 3); r("#c9c9d0", 16, -8, 4, 16); r("#888", 16, -8, 4, 2); break;
@@ -712,33 +803,48 @@ function draw() {
 }
 
 let lastHud = "";
+const $ = id => document.getElementById(id);
 function updateHud() {
   const p = player;
-  document.getElementById("hp").textContent = Math.max(0, p.hp);
-  document.getElementById("dia").textContent = p.dia;
-  document.getElementById("stone").textContent = p.stone;
-  document.getElementById("depth").textContent = Math.max(0, Math.round(p.y / T - SURF));
+  $("hp").textContent = Math.max(0, p.hp);
+  $("dia").textContent = p.dia;
+  $("stone").textContent = p.stone;
+  $("depth").textContent = Math.max(0, Math.round(p.y / T - SURF));
+  $("timer").textContent = fmtTime(runTime);
+  const cd = p.dashCd;
+  $("dash").classList.toggle("ready", cd <= 0);
+  $("dashfill").style.width = (cd > 0 ? (1 - cd / DASH_CD) * 100 : 100) + "%";
+  $("dashtxt").textContent = cd > 0 ? cd.toFixed(1) + "s" : "READY";
   let h = "";
   ORDER.forEach((n, i) => {
-    if (!p.own[n]) return;
-    h += "<div class='slot" + (p.sel === n ? " sel" : "") + "'><b>" + (i + 1) + "</b> " + WEAP[n].name + (n === "pick" ? "" : " <i>" + (p.ammo[n] || 0) + "</i>") + "</div>";
+    const own = p.own[n], ammo = p.ammo[n];
+    h += "<div class='slot" + (p.sel === n ? " sel" : "") + (own ? "" : " locked") + "'><span class='key'>" + (i + 1) + "</span><img src='" + ICON[n] + "'>" +
+      (n === "pick" ? "" : "<span class='cnt'>" + ammo + "</span>") + "<span class='lbl'>" + WEAP[n].name + "</span></div>";
   });
-  if (h !== lastHud) { document.getElementById("weapons").innerHTML = h; lastHud = h; }
+  h += "<div class='sep'></div><div class='slot med" + (p.meds ? "" : " locked") + "'><span class='key'>H</span><span class='medic'>+</span><span class='cnt'>" + p.meds + "</span><span class='lbl'>Medkit</span></div>";
+  if (h !== lastHud) { $("weapons").innerHTML = h; lastHud = h; }
 }
 
 /* ---------- ciklus és bemenet ---------- */
-let last = 0;
+let last = 0, runTime = 0;
 function loop(ts) {
   requestAnimationFrame(loop);
-  const dt = Math.min(0.033, (ts - last) / 1000 || 0); last = ts;
+  const raw = Math.min(0.1, (ts - last) / 1000 || 0), dt = Math.min(0.033, raw); last = ts;
+  if ((state === "play" || state === "shop") && boss && !boss.dead) runTime += raw;
   if (state === "play") { time += dt; updatePlayer(dt); updateSoldiers(dt); updateBoss(dt); updateBullets(dt); }
   if (player) draw();
 }
 addEventListener("keydown", e => {
   const k = e.key.toLowerCase(); keys[k] = true;
+  if (state === "shop") {
+    if (k === "e" || k === "escape") closeShop();
+    return;
+  }
   if (state !== "play") return;
-  if (k === "f" || k === "q") attack();
-  if (k === "e") openNearChest();
+  if (k === "f") attack();
+  if (k === "q") dash();
+  if (k === "h") useMedkit();
+  if (k === "e" && !openNearChest()) openShop();
   if (k >= "1" && k <= "6") selectWeapon(ORDER[+k - 1]);
   if ([" ", "arrowup", "arrowdown"].includes(k)) e.preventDefault();
 });
@@ -753,4 +859,5 @@ cv.addEventListener("mousedown", e => { if (e.button === 0) mouse.left = true; i
 addEventListener("mouseup", e => { if (e.button === 0) mouse.left = false; if (e.button === 2) mouse.right = false; });
 cv.addEventListener("contextmenu", e => e.preventDefault());
 document.getElementById("start").onclick = begin;
+buildIcons();
 requestAnimationFrame(loop);
